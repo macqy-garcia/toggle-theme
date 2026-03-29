@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>corepartydata</title>
+    <style>
+      :root {
+        --color-bg: #ffffff;
+        --color-text: #111111;
+        --color-surface: #f5f5f5;
+      }
+      [data-theme="dark"] {
+        --color-bg: #111111;
+        --color-text: #f5f5f5;
+        --color-surface: #1e1e1e;
+      }
+      body {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        font-family: sans-serif;
+        padding: 2rem;
+        transition: background-color 0.2s, color 0.2s;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>corepartydata</h1>
+    <dark-mode-toggle></dark-mode-toggle>
+    <script type="module" src="/src/index.ts"></script>
+  </body>
+</html>

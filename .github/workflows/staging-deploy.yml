@@ -1,0 +1,103 @@
+name: Staging CDN Deploy
+
+# Triggers only on semver prerelease tags: v1.0.0-alpha.1, v0.2.0-rc.3, etc.
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging CDN
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version in package.json
+        run: npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Test
+        run: npm test
+
+      - name: Build Storybook
+        run: npm run build-storybook
+
+      - name: Build library
+        run: npm run build
+
+      # ---------------------------------------------------------------
+      # CDN deploy — using AWS S3 + CloudFront as the CDN provider.
+      # Swap the aws s3 / cloudfront commands for your actual CDN CLI.
+      # Required secrets: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+      #   AWS_REGION, STAGING_S3_BUCKET, STAGING_CF_DISTRIBUTION,
+      #   STAGING_BASE_URL
+      # ---------------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy versioned Storybook to CDN
+        env:
+          S3_BUCKET: ${{ secrets.STAGING_S3_BUCKET }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Versioned permalink — immutable, long cache TTL
+          aws s3 sync storybook-static/ \
+            s3://$S3_BUCKET/storybook/$VERSION/ \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable"
+
+          # latest-prerelease alias — short TTL so the team gets fresh content
+          aws s3 sync storybook-static/ \
+            s3://$S3_BUCKET/storybook/latest-prerelease/ \
+            --delete \
+            --cache-control "public, max-age=300"
+
+      - name: Invalidate CloudFront latest-prerelease path
+        env:
+          CF_DISTRIBUTION: ${{ secrets.STAGING_CF_DISTRIBUTION }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id $CF_DISTRIBUTION \
+            --paths "/storybook/latest-prerelease/*"
+
+      - name: Post staging URL as commit status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            const baseUrl = '${{ secrets.STAGING_BASE_URL }}';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'success',
+              target_url: `${baseUrl}/storybook/${version}/`,
+              description: `Storybook staging: ${version}`,
+              context: 'staging-deploy / storybook',
+            });

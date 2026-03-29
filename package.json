@@ -1,0 +1,49 @@
+{
+  "name": "corepartydata",
+  "version": "0.1.0-alpha.0",
+  "description": "Lit web component library — dark mode toggle and more",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "msw": {
+    "workerDirectory": ["public"]
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test": "wtr",
+    "test:watch": "wtr --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "msw:init": "msw init public/ --save"
+  },
+  "dependencies": {
+    "lit": "^3.2.1"
+  },
+  "devDependencies": {
+    "@open-wc/testing": "^4.0.0",
+    "@storybook/addon-a11y": "^8.6.12",
+    "@storybook/addon-essentials": "^8.6.12",
+    "@storybook/addon-links": "^8.6.12",
+    "@storybook/web-components": "^8.6.12",
+    "@storybook/web-components-vite": "^8.6.12",
+    "@types/node": "^22.10.7",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@web/test-runner": "^0.19.0",
+    "@web/test-runner-playwright": "^0.11.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-lit": "^1.15.0",
+    "eslint-plugin-no-unsanitized": "^4.1.2",
+    "eslint-plugin-wc": "^2.2.0",
+    "msw": "^2.7.3",
+    "msw-storybook-addon": "^2.0.4",
+    "storybook": "^8.6.12",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.19"
+  }
+}
