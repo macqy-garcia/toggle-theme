@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal Data Modals – Web View</title>
+  <style>
+    /* ── Reset & Tokens ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #E8501A;
+      --orange-hover: #c94217;
+      --radius-modal: 16px;
+      --radius-btn: 100px;
+      --shadow: 0 24px 64px rgba(0,0,0,.18);
+    }
+
+    /* ── Page shell ── */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      transition: background .3s, color .3s;
+    }
+
+    /* Light */
+    body.light {
+      background: #f0f2f5;
+      color: #111;
+    }
+    /* Dark */
+    body.dark {
+      background: #1a1a1a;
+      color: #f0f0f0;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      gap: 12px;
+    }
+    body.light .topbar { background: #fff; border-bottom: 1px solid #e5e5e5; color: #555; }
+    body.dark  .topbar { background: #222;  border-bottom: 1px solid #333;  color: #aaa; }
+
+    .topbar-title { font-size: 15px; letter-spacing: 0; text-transform: none; font-weight: 700; }
+    body.light .topbar-title { color: #111; }
+    body.dark  .topbar-title { color: #eee; }
+
+    /* Theme toggle */
+    .theme-toggle {
+      display: flex;
+      gap: 8px;
+    }
+    .theme-btn {
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all .2s;
+    }
+    body.light .theme-btn.active { background: #111; color: #fff; border-color: #111; }
+    body.light .theme-btn:not(.active) { background: transparent; color: #666; border-color: #ddd; }
+    body.dark  .theme-btn.active { background: #f0f0f0; color: #111; border-color: #f0f0f0; }
+    body.dark  .theme-btn:not(.active) { background: transparent; color: #888; border-color: #444; }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 10px;
+    }
+    body.light .tab-bar { background: #e8e8e8; }
+    body.dark  .tab-bar { background: #2a2a2a; }
+
+    .tab-btn {
+      cursor: pointer;
+      border: none;
+      border-radius: 7px;
+      padding: 7px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all .2s;
+    }
+    body.light .tab-btn.active { background: #fff; color: #111; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    body.light .tab-btn:not(.active) { background: transparent; color: #777; }
+    body.dark  .tab-btn.active { background: #444; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+    body.dark  .tab-btn:not(.active) { background: transparent; color: #888; }
+
+    /* ── Main content area ── */
+    .page-content {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      position: relative;
+    }
+
+    /* Simulated backdrop */
+    .backdrop {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body.light .backdrop { background: rgba(0,0,0,.35); }
+    body.dark  .backdrop { background: rgba(0,0,0,.6); }
+
+    /* ── Modal wrapper ── */
+    .modal {
+      display: none;
+      position: relative;
+      z-index: 10;
+      border-radius: var(--radius-modal);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 560px;
+      overflow: hidden;
+      animation: popIn .25s ease;
+    }
+    .modal.active { display: flex; flex-direction: column; }
+
+    @keyframes popIn {
+      from { transform: scale(.95) translateY(12px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);    opacity: 1; }
+    }
+
+    body.light .modal { background: #fff; color: #111; }
+    body.dark  .modal { background: #242424; color: #f0f0f0; }
+
+    /* ── Modal header ── */
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px 16px;
+      border-bottom: 1px solid transparent;
+    }
+    body.light .modal-header { border-bottom-color: #ebebeb; }
+    body.dark  .modal-header { border-bottom-color: #333; }
+
+    .modal-header-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    body.dark .modal-header-title { color: #ddd; }
+
+    .close-btn {
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    body.light .close-btn { color: #444; }
+    body.light .close-btn:hover { background: #f0f0f0; }
+    body.dark  .close-btn { color: #bbb; }
+    body.dark  .close-btn:hover { background: #333; }
+
+    .close-icon {
+      width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      font-size: 13px;
+    }
+    body.light .close-icon { background: #e8e8e8; }
+    body.dark  .close-icon { background: #3a3a3a; }
+
+    /* ── MODAL 1: Add to your data ── */
+    .modal-intro .modal-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 40px 48px 36px;
+      gap: 0;
+    }
+
+    /* Illustration */
+    .illustration {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    /* SVG-based illustration */
+    .illustration svg { width: 100%; height: 100%; }
+
+    .modal-intro h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -.5px;
+      margin-bottom: 14px;
+      line-height: 1.2;
+    }
+
+    .modal-intro p {
+      font-size: 15px;
+      line-height: 1.65;
+      max-width: 380px;
+      margin-bottom: 36px;
+    }
+    body.light .modal-intro p { color: #555; }
+    body.dark  .modal-intro p { color: #aaa; }
+
+    /* ── MODAL 2: Is everything still up to date? ── */
+    .modal-review .modal-body {
+      padding: 28px 28px 0;
+    }
+
+    .modal-review h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -.4px;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+
+    .modal-review .subtitle {
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    body.light .modal-review .subtitle { color: #666; }
+    body.dark  .modal-review .subtitle { color: #999; }
+
+    /* Data fields grid */
+    .data-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 16px;
+      margin-bottom: 4px;
+    }
+
+    .data-field {
+      padding: 14px 0;
+      border-bottom: 1px solid transparent;
+    }
+    body.light .data-field { border-bottom-color: #f0f0f0; }
+    body.dark  .data-field { border-bottom-color: #2e2e2e; }
+
+    .data-field:last-child { border-bottom: none; }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    body.light .field-label { color: #999; }
+    body.dark  .field-label  { color: #666; }
+
+    .field-value {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+    body.light .field-value { color: #111; }
+    body.dark  .field-value  { color: #ddd; }
+
+    /* ── Buttons ── */
+    .modal-footer {
+      padding: 20px 28px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modal-intro .modal-footer {
+      padding: 0 48px 40px;
+    }
+
+    .btn {
+      cursor: pointer;
+      border: none;
+      border-radius: var(--radius-btn);
+      padding: 15px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: var(--orange);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--orange-hover); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(232,80,26,.35); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-secondary {
+      background: transparent;
+      color: inherit;
+    }
+    body.light .btn-secondary { border: 1.5px solid #ccc; }
+    body.dark  .btn-secondary { border: 1.5px solid #444; }
+    body.light .btn-secondary:hover { background: #f5f5f5; border-color: #aaa; }
+    body.dark  .btn-secondary:hover { background: #2e2e2e; border-color: #666; }
+
+    .btn-icon { font-size: 13px; opacity: .7; }
+
+    /* ── Preview label ── */
+    .preview-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 10px 0 24px;
+      opacity: .5;
+      text-align: center;
+    }
+
+    /* ── Scrollable body ── */
+    .modal-review .modal-body {
+      max-height: 62vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    body.light .modal-review .modal-body { scrollbar-color: #ddd transparent; }
+    body.dark  .modal-review .modal-body { scrollbar-color: #444 transparent; }
+
+    /* Fade at bottom of scroll */
+    .modal-review { position: relative; }
+    .scroll-fade {
+      position: sticky;
+      bottom: 0;
+      height: 40px;
+      margin-top: -40px;
+      pointer-events: none;
+    }
+    body.light .scroll-fade { background: linear-gradient(to bottom, transparent, rgba(255,255,255,.9)); }
+    body.dark  .scroll-fade { background: linear-gradient(to bottom, transparent, rgba(36,36,36,.9)); }
+  </style>
+</head>
+<body class="light">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <span class="topbar-title">Personal Data Modals — Web View</span>
+
+    <div style="display:flex; gap:16px; align-items:center;">
+      <!-- Tab switcher -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="showModal('intro')">Add to your data</button>
+        <button class="tab-btn" onclick="showModal('review')">Data review</button>
+      </div>
+
+      <!-- Theme toggle -->
+      <div class="theme-toggle">
+        <button class="theme-btn active" onclick="setTheme('light')">☀ Light</button>
+        <button class="theme-btn" onclick="setTheme('dark')">☾ Dark</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page with backdrop -->
+  <div class="page-content">
+    <div class="backdrop">
+
+      <div style="width:100%; max-width:600px; display:flex; flex-direction:column; align-items:center;">
+        <div class="preview-label">Modal preview</div>
+
+        <!-- ── MODAL 1: Intro ── -->
+        <div class="modal modal-intro active" id="modal-intro">
+          <div class="modal-header">
+            <button class="close-btn">
+              <span class="close-icon">✕</span>
+              Close
+            </button>
+            <span class="modal-header-title">Personal Data</span>
+            <div style="width:64px"></div><!-- spacer -->
+          </div>
+
+          <div class="modal-body">
+            <!-- Illustration -->
+            <div class="illustration">
+              <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Document shadow -->
+                <rect x="28" y="22" width="62" height="78" rx="6" fill="#D0C8BE" transform="rotate(-4 28 22)"/>
+                <!-- Document -->
+                <rect x="24" y="18" width="62" height="78" rx="6" fill="#F0EBE3"/>
+                <!-- Lines on doc -->
+                <rect x="34" y="34" width="42" height="5" rx="2.5" fill="#C8BFB4"/>
+                <rect x="34" y="44" width="34" height="4" rx="2" fill="#DDD6CE"/>
+                <rect x="34" y="52" width="38" height="4" rx="2" fill="#DDD6CE"/>
+                <rect x="34" y="60" width="28" height="4" rx="2" fill="#DDD6CE"/>
+                <!-- Pencil -->
+                <g transform="rotate(30 85 85)">
+                  <rect x="74" y="60" width="12" height="40" rx="2" fill="#3B82F6"/>
+                  <polygon points="74,100 86,100 80,112" fill="#FCD34D"/>
+                  <rect x="74" y="58" width="12" height="6" rx="1" fill="#93C5FD"/>
+                </g>
+                <!-- Checkmark circle -->
+                <circle cx="82" cy="28" r="16" fill="#F59E0B"/>
+                <path d="M74 28 l6 6 10-12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
+            </div>
+
+            <h1>Add to your data</h1>
+            <p>As a bank, we are required to collect or update some additional information from you because it concerns accounts and finances.</p>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-primary">Next</button>
+          </div>
+        </div>
+
+        <!-- ── MODAL 2: Data review ── -->
+        <div class="modal modal-review" id="modal-review">
+          <div class="modal-header">
+            <button class="close-btn">
+              <span class="close-icon">✕</span>
+              Close
+            </button>
+            <span class="modal-header-title">Personal Data</span>
+            <div style="width:64px"></div>
+          </div>
+
+          <div class="modal-body">
+            <h1>Is everything still up to date?</h1>
+            <p class="subtitle">For your request, we will take over the following personal data from you.</p>
+
+            <div class="data-grid">
+              <div class="data-field">
+                <div class="field-label">Name</div>
+                <div class="field-value">Frau Alex Mustermensch</div>
+              </div>
+              <div class="data-field">
+                <div class="field-label">Meldeadresse</div>
+                <div class="field-value">Musterstraße 10<br>12345 Musterstadt</div>
+              </div>
+              <div class="data-field">
+                <div class="field-label">Mobilnummer</div>
+                <div class="field-value">+49 151 12345678</div>
+              </div>
+              <div class="data-field">
+                <div class="field-label">E-Mail-Adresse</div>
+                <div class="field-value">alex.mustermensch@mail.com</div>
+              </div>
+              <div class="data-field">
+                <div class="field-label">Date of birth</div>
+                <div class="field-value">22.06.1988<br>Darmstadt, Deutschland</div>
+              </div>
+              <div class="data-field">
+                <div class="field-label">Country or Nationality</div>
+                <div class="field-value">Deutschland<br>Kein weiteres Land</div>
+              </div>
+            </div>
+
+            <div class="scroll-fade"></div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-primary">Yeah, everything's right</button>
+            <button class="btn btn-secondary">I need to adjust something <span class="btn-icon">↗</span></button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showModal(id) {
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+      document.getElementById('modal-' + id).classList.add('active');
+
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', (id === 'intro' && i === 0) || (id === 'review' && i === 1));
+      });
+    }
+
+    function setTheme(theme) {
+      document.body.className = theme;
+      document.querySelectorAll('.theme-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', (theme === 'light' && i === 0) || (theme === 'dark' && i === 1));
+      });
+    }
+  </script>
+</body>
+</html>
